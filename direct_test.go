@@ -1,7 +1,6 @@
 package injecter
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,13 +13,18 @@ const (
 )
 
 func TestHandle_Query(t *testing.T) {
-	handle, err := connect(address, username, password)
-	require.NoError(t, err)
+	handle := testHanlde(t)
 	rows, err := handle.Query("show variables like '%max_allowed_packet%'")
 	require.NoError(t, err)
 	for i := 0; i < len(rows); i++ {
 		for k, v := range rows[i] {
-			fmt.Println(k, v)
+			t.Log(k, v)
 		}
 	}
+}
+
+func testHanlde(t *testing.T) Handle {
+	handle, err := Connect(address, username, password)
+	require.NoError(t, err)
+	return handle
 }
