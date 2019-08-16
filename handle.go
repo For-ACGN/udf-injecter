@@ -15,6 +15,6 @@ type Handle interface {
 	// result, _ := Query("show variables like '%version_%'")
 	// result[2]["Variable_name"] = "x86_64"
 	// Query result length must > 0
-	Query(query string, args ...interface{}) ([]map[string]string, error)
-	Exec(query string, args ...interface{}) error
+	Query(query string) ([]map[string]string, error)
+	Exec(query string) error
 }
