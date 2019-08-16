@@ -33,8 +33,8 @@ func ConnectWithDSN(dsn string) (Handle, error) {
 	return &direct{DB: db}, nil
 }
 
-func (d *direct) Query(query string, args ...interface{}) ([]map[string]string, error) {
-	rows, err := d.DB.Query(query, args...)
+func (d *direct) Query(query string) ([]map[string]string, error) {
+	rows, err := d.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func (d *direct) Query(query string, args ...interface{}) ([]map[string]string, 
 	return list, nil
 }
 
-func (d *direct) Exec(query string, args ...interface{}) error {
-	_, err := d.DB.Exec(query, args...)
+func (d *direct) Exec(query string) error {
+	_, err := d.DB.Exec(query)
 	return err
 }

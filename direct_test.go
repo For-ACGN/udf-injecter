@@ -6,13 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	address  = "127.0.0.1:3306"
-	username = "root"
-	password = "123456"
-)
-
-func TestHandle_Query(t *testing.T) {
+func TestHandle(t *testing.T) {
 	handle := testHanlde(t)
 	rows, err := handle.Query("show variables like '%max_allowed_packet%'")
 	require.NoError(t, err)
@@ -21,10 +15,13 @@ func TestHandle_Query(t *testing.T) {
 			t.Log(k, v)
 		}
 	}
+	err = handle.Exec("show variables like '%max_allowed_packet%'")
+	require.NoError(t, err)
 }
 
+// 8.0.15
 func testHanlde(t *testing.T) Handle {
-	handle, err := Connect(address, username, password)
+	handle, err := Connect("127.0.0.1:3306", "root", "123456")
 	require.NoError(t, err)
 	return handle
 }
