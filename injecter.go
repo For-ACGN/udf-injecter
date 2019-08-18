@@ -54,12 +54,12 @@ func Inject(handle Handle, udf map[string]*UDF, funcs []Func) error {
 	if !ok { // try all udf
 		for _, u := range udf {
 			// version < 5.1.xx
-			if ver < 050100 {
+			if ver < 501 {
 				err = injectUDF(handle, u, funcs, false)
 				if err == nil {
 					return nil
 				}
-			} else {
+			} else { // include MariaDB
 				err = injectUDF(handle, u, funcs, true)
 				if err == nil {
 					return nil
@@ -69,9 +69,10 @@ func Inject(handle Handle, udf map[string]*UDF, funcs []Func) error {
 		return errors.New("all failed")
 	}
 	// version < 5.1.xx
-	if ver < 050100 {
+	if ver < 501 {
 		return injectUDF(handle, udfData, funcs, false)
 	}
+	// include MariaDB
 	return injectUDF(handle, udfData, funcs, true)
 }
 
@@ -91,6 +92,12 @@ func injectUDF(handle Handle, udf *UDF, funcs []Func, v51 bool) error {
 		}
 		setMaxAllowedPacket = true
 	}
+	defer func() {
+		// recovery MaxAllowedPacket
+		if setMaxAllowedPacket {
+			_ = SetMaxAllowedPacket(handle, size)
+		}
+	}()
 	// dump udf
 	var path string
 	if v51 { // 5.1.xx
@@ -102,7 +109,7 @@ func injectUDF(handle Handle, udf *UDF, funcs []Func, v51 bool) error {
 		path = dir + "/" + udf.Name
 	} else { // 5.0.xx
 		// dump current path
-		path = udf.Name
+		path = "./" + udf.Name
 	}
 	err = DumpFile(handle, udf.Data, path)
 	if err != nil {
@@ -115,20 +122,16 @@ func injectUDF(handle Handle, udf *UDF, funcs []Func, v51 bool) error {
 			return err
 		}
 	}
-	// recovery MaxAllowedPacket
-	if setMaxAllowedPacket {
-		return SetMaxAllowedPacket(handle, size)
-	}
 	return nil
 }
 
 // IsDynamic
 func IsDynamic(handle Handle) bool {
-	result, err := handle.Query("select @@have_dynamic_loading")
+	result, err := handle.Query("show variables like 'have_dynamic_loading'")
 	if err != nil {
 		return false
 	}
-	b, ok := result[0]["@@have_dynamic_loading"]
+	b, ok := result[0]["Value"]
 	if !ok {
 		return false
 	}
@@ -149,24 +152,19 @@ func GetVersion(handle Handle) (string, error) {
 }
 
 // ParseVersion
-// "8.0.15" = 08|00|15 -> 80015(int)
+// "8.0.15" = 08|00 -> 0800(int)
 func ParseVersion(version string) (ver int, err error) {
 	err = errors.Errorf("invalid version: %s", version)
 	sub := strings.Split(version, ".")
-	if len(sub) != 3 {
+	if len(sub) < 2 {
 		return
 	}
 	n, err := strconv.Atoi(sub[0])
 	if err != nil {
 		return
 	}
-	ver = n * 10000
-	n, err = strconv.Atoi(sub[1])
-	if err != nil {
-		return
-	}
 	ver += n * 100
-	n, err = strconv.Atoi(sub[2])
+	n, err = strconv.Atoi(sub[1])
 	if err != nil {
 		return
 	}
