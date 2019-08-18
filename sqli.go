@@ -14,3 +14,7 @@ func (d *sqli) Query(query string) ([]map[string]string, error) {
 func (d *sqli) Exec(query string) error {
 	return nil
 }
+
+func (d *sqli) Close() {
+
+}

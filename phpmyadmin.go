@@ -14,3 +14,7 @@ func (d *phpmyadmin) Query(query string) ([]map[string]string, error) {
 func (d *phpmyadmin) Exec(query string) error {
 	return nil
 }
+
+func (d *phpmyadmin) Close() {
+
+}

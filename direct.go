@@ -74,3 +74,7 @@ func (d *direct) Exec(query string) error {
 	_, err := d.DB.Exec(query)
 	return err
 }
+
+func (d *direct) Close() {
+	_ = d.DB.Close()
+}

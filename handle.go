@@ -17,4 +17,5 @@ type Handle interface {
 	// Query result length must > 0
 	Query(query string) ([]map[string]string, error)
 	Exec(query string) error
+	Close()
 }
