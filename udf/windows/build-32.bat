@@ -1,0 +1,1 @@
+gcc -m32 -Wall -fPIC -I "E:\MySQL\include" -shared -o udf32.dll udf.c
