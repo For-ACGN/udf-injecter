@@ -218,10 +218,7 @@ func GetMaxAllowedPacket(handle Handle) (int, error) {
 		return 0, errors.New("no max_allowed_packet")
 	}
 	v, err := strconv.Atoi(value)
-	if err != nil {
-		return 0, errors.WithMessage(err, errPrefix)
-	}
-	return v, nil
+	return v, errors.WithMessage(err, errPrefix)
 }
 
 // SetMaxAllowedPacket

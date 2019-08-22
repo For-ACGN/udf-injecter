@@ -45,7 +45,7 @@ func TestInject51(t *testing.T) {
 }
 
 func testInject(t *testing.T, h Handle) {
-	udfdata, err := ioutil.ReadFile("udf/windows/udf.dll")
+	udfdata, err := ioutil.ReadFile("udf/windows/udf32.dll")
 	require.NoError(t, err)
 	name := RandomStr(8) + "." + RandomStr(3)
 	udfmap := map[string]*UDF{"windows_386": {name, udfdata}}
