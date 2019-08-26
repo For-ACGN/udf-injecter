@@ -49,7 +49,7 @@ func testInject(t *testing.T, h Handle) {
 	require.NoError(t, err)
 	name := RandomStr(8) + "." + RandomStr(3)
 	udfmap := map[string]*UDF{"windows_386": {name, udfdata}}
-	funcs := []Func{{"udf_add", "integer"}}
+	funcs := []*Func{{"udf_add", "integer"}}
 	err = Inject(h, udfmap, funcs)
 	require.NoError(t, err)
 	err = DropFunc(h, "udf_add")
