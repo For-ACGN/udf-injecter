@@ -25,7 +25,7 @@ type Func struct {
 // windows_amd64:*UDF
 // linux_386:*UDF
 // linux_amd64:*UDF
-func Inject(handle Handle, udf map[string]*UDF, funcs []Func) error {
+func Inject(handle Handle, udf map[string]*UDF, funcs []*Func) error {
 	if len(udf) == 0 || len(funcs) == 0 {
 		return errors.New("no UDF or no Functions")
 	}
@@ -77,7 +77,7 @@ func Inject(handle Handle, udf map[string]*UDF, funcs []Func) error {
 }
 
 // v51: version > 5.1.xx
-func injectUDF(handle Handle, udf *UDF, funcs []Func, v51 bool) error {
+func injectUDF(handle Handle, udf *UDF, funcs []*Func, v51 bool) error {
 	// check MaxAllowedPacket
 	size, err := GetMaxAllowedPacket(handle)
 	if err != nil {
@@ -268,7 +268,7 @@ func DumpFile(handle Handle, data []byte, path string) error {
 
 // CreateFunc
 // path: soname path
-func CreateFunc(handle Handle, f Func, path string) error {
+func CreateFunc(handle Handle, f *Func, path string) error {
 	query := fmt.Sprintf("create function %s returns %s soname '%s'", f.Name, f.Return, path)
 	err := handle.Exec(query)
 	if err != nil {
