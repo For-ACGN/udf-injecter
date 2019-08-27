@@ -50,30 +50,27 @@ func Inject(handle Handle, udf map[string]*UDF, funcs []*Func) error {
 	if err != nil {
 		return err
 	}
-	udfData, ok := udf[os+"_"+arch]
-	if !ok { // try all udf
-		for _, u := range udf {
-			// version < 5.1.xx
-			if ver < 501 {
-				err = injectUDF(handle, u, funcs, false)
-				if err == nil {
-					return nil
-				}
-			} else { // include MariaDB
-				err = injectUDF(handle, u, funcs, true)
-				if err == nil {
-					return nil
-				}
+	if udfData, ok := udf[os+"_"+arch]; ok {
+		if ver < 501 { // version < 5.1.xx
+			return injectUDF(handle, udfData, funcs, false)
+		}
+		return injectUDF(handle, udfData, funcs, true) // include MariaDB
+	}
+	// attempt all UDF
+	for _, u := range udf {
+		if ver < 501 { // version < 5.1.xx
+			err = injectUDF(handle, u, funcs, false)
+			if err == nil {
+				return nil
+			}
+		} else { // include MariaDB
+			err = injectUDF(handle, u, funcs, true)
+			if err == nil {
+				return nil
 			}
 		}
-		return errors.New("all failed")
 	}
-	// version < 5.1.xx
-	if ver < 501 {
-		return injectUDF(handle, udfData, funcs, false)
-	}
-	// include MariaDB
-	return injectUDF(handle, udfData, funcs, true)
+	return errors.New("all attempts failed")
 }
 
 // v51: version > 5.1.xx
