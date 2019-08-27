@@ -90,7 +90,7 @@ func injectUDF(handle Handle, udf *UDF, funcs []*Func, v51 bool) error {
 		setMaxAllowedPacket = true
 	}
 	defer func() {
-		// recovery MaxAllowedPacket
+		// recover MaxAllowedPacket
 		if setMaxAllowedPacket {
 			_ = SetMaxAllowedPacket(handle, size)
 		}
