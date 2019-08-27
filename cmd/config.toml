@@ -1,13 +1,13 @@
 [UDF]
-  windows_386   = "udf32.dll"
-  windows_amd64 = "udf64.dll"
-  linux_386     = "udf32.so"
-  linux_amd64   = "udf64.so"
+  windows_386   = "../udf/windows/udf32.dll"
+  windows_amd64 = "../udf/windows/udf64.dll"
+  #linux_386     = "../udf/linux/udf32.so"
+  #linux_amd64   = "../udf/linux/udf64.so"
 
 [[Func]]
   Name   = "udf_add"
   Return = "integer"
 
-[[Func]]
-  Name   = "udf_str"
-  Return = "string"
+#[[Func]]
+#  Name   = "udf_str"
+#  Return = "string"

