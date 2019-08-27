@@ -9,5 +9,5 @@
   Return = "integer"
 
 [[Func]]
-  Name   = "udf_add2"
-  Return = "integer"
+  Name   = "udf_str"
+  Return = "string"
